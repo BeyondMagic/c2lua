@@ -42,11 +42,11 @@ static void parser_error_cleanup(AstProgram **out_program);
   AstProgram *program;
 }
 
-%token <intValue> INT_LITERAL
+%token <intValue> INT_LITERAL CHAR_LITERAL
 %token <floatValue> FLOAT_LITERAL
 %token <id> IDENT
 %token <string> STRING_LITERAL
-%token KW_INT KW_FLOAT KW_BOOL KW_VOID
+%token KW_INT KW_CHAR KW_FLOAT KW_BOOL KW_VOID
 %token RETURN
 %token WHILE FOR
 %token TRUE FALSE
@@ -109,6 +109,7 @@ function_definition
 
 type_specifier
     : KW_INT   { $$ = TYPE_INT; }
+    | KW_CHAR  { $$ = TYPE_CHAR; }
     | KW_FLOAT { $$ = TYPE_FLOAT; }
     | KW_BOOL  { $$ = TYPE_BOOL; }
     | KW_VOID  { $$ = TYPE_VOID; }
@@ -473,6 +474,10 @@ primary_expression
     : INT_LITERAL
       {
           $$ = ast_expr_make_int($1);
+      }
+    | CHAR_LITERAL
+      {
+          $$ = ast_expr_make_char($1);
       }
     | FLOAT_LITERAL
       {

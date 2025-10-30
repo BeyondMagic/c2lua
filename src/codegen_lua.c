@@ -97,6 +97,12 @@ static void emit_main_wrapper(FILE *out, const AstFunction *fn, const FunctionSi
 			case TYPE_INT:
 				fprintf(out, "local %s = args_table and tonumber(args_table[%zu]) or 0\n", param->name, i + 1);
 				break;
+			case TYPE_CHAR:
+				fprintf(out, "local %s = args_table and args_table[%zu] and string.byte(args_table[%zu]) or 0\n",
+					param->name,
+					i + 1,
+					i + 1);
+				break;
 			case TYPE_FLOAT:
 				fprintf(out, "local %s = args_table and tonumber(args_table[%zu]) or 0.0\n", param->name, i + 1);
 				break;
@@ -271,7 +277,7 @@ static void emit_expression_expected(FILE *out, const AstExpr *expr, const Funct
 		return;
 	}
 
-	if (expected_type == TYPE_INT && actual == TYPE_FLOAT)
+	if ((expected_type == TYPE_INT || expected_type == TYPE_CHAR) && actual == TYPE_FLOAT)
 	{
 		fputs("math.floor(", out);
 		emit_expression_raw(out, expr, functions);
@@ -279,7 +285,7 @@ static void emit_expression_expected(FILE *out, const AstExpr *expr, const Funct
 		return;
 	}
 
-	if ((expected_type == TYPE_INT || expected_type == TYPE_FLOAT) && actual == TYPE_BOOL)
+	if ((expected_type == TYPE_INT || expected_type == TYPE_FLOAT || expected_type == TYPE_CHAR) && actual == TYPE_BOOL)
 	{
 		fputc('(', out);
 		emit_expression_as_bool(out, expr, functions);
@@ -400,6 +406,7 @@ static void emit_expression_as_bool(FILE *out, const AstExpr *expr, const Functi
 		break;
 	case TYPE_INT:
 	case TYPE_FLOAT:
+	case TYPE_CHAR:
 		fputc('(', out);
 		emit_expression_raw(out, expr, functions);
 		fputs(" ~= 0)", out);
@@ -622,6 +629,9 @@ static void emit_array_default_value(FILE *out, TypeKind type)
 	switch (type)
 	{
 	case TYPE_INT:
+		fputs("0", out);
+		break;
+	case TYPE_CHAR:
 		fputs("0", out);
 		break;
 	case TYPE_FLOAT:

@@ -60,6 +60,43 @@ static char *yy_parse_string_literal(const char *src)
     buffer[out] = '\0';
     return buffer;
 }
+
+static long long yy_parse_char_literal(const char *src)
+{
+    size_t len = strlen(src);
+    if (len < 3 || src[0] != '\'' || src[len - 1] != '\'')
+    {
+        return 0;
+    }
+    if (src[1] != '\\')
+    {
+        return (unsigned char)src[1];
+    }
+    if (len < 4)
+    {
+        return 0;
+    }
+    char esc = src[2];
+    switch (esc)
+    {
+    case '\\':
+        return '\\';
+    case '\'':
+        return '\'';
+    case 'n':
+        return '\n';
+    case 'r':
+        return '\r';
+    case 't':
+        return '\t';
+    case '0':
+        return '\0';
+    case '"':
+        return '"';
+    default:
+        return (unsigned char)esc;
+    }
+}
 %}
 
 %option noyywrap nodefault noinput nounput
@@ -70,6 +107,7 @@ static char *yy_parse_string_literal(const char *src)
 
 [ \t\r\n]+                         { /* skip whitespace */ }
 "int"                              { return KW_INT; }
+"char"                             { return KW_CHAR; }
 "float"                            { return KW_FLOAT; }
 "bool"                             { return KW_BOOL; }
 "void"                             { return KW_VOID; }
@@ -117,6 +155,7 @@ static char *yy_parse_string_literal(const char *src)
 "{"                                { return LBRACE; }
 "}"                                { return RBRACE; }
 \"([^\"\n]|\\.)*\"             { yylval.string = yy_parse_string_literal(yytext); return STRING_LITERAL; }
+'([^\\'\n]|\\.)'             { yylval.intValue = yy_parse_char_literal(yytext); return CHAR_LITERAL; }
 .                                  { fprintf(stderr, "invalid character '%s'\n", yytext); }
 
 %%

@@ -402,6 +402,15 @@ AstExpr *ast_expr_make_int(long long value)
 	return expr;
 }
 
+AstExpr *ast_expr_make_char(long long value)
+{
+	AstExpr *expr = xcalloc(1, sizeof(AstExpr));
+	expr->kind = EXPR_INT_LITERAL;
+	expr->type = TYPE_CHAR;
+	expr->data.int_value = (long long)(unsigned char)value;
+	return expr;
+}
+
 AstExpr *ast_expr_make_float(double value)
 {
 	AstExpr *expr = xcalloc(1, sizeof(AstExpr));
@@ -510,6 +519,10 @@ TypeKind ast_type_from_keyword(const char *kw)
 	{
 		return TYPE_INT;
 	}
+	if (strcmp(kw, "char") == 0)
+	{
+		return TYPE_CHAR;
+	}
 	if (strcmp(kw, "float") == 0)
 	{
 		return TYPE_FLOAT;
@@ -535,6 +548,8 @@ const char *ast_type_name(TypeKind type)
 	{
 	case TYPE_INT:
 		return "int";
+	case TYPE_CHAR:
+		return "char";
 	case TYPE_FLOAT:
 		return "float";
 	case TYPE_BOOL:
