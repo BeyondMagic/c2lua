@@ -1,1 +1,1 @@
-syntax error: syntax error
+tests/fail/wrong_assign.c:4:6: syntax error: syntax error

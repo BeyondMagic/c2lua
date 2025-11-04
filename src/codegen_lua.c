@@ -99,9 +99,9 @@ static void emit_main_wrapper(FILE *out, const AstFunction *fn, const FunctionSi
 				break;
 			case TYPE_CHAR:
 				fprintf(out, "local %s = args_table and args_table[%zu] and string.byte(args_table[%zu]) or 0\n",
-					param->name,
-					i + 1,
-					i + 1);
+						param->name,
+						i + 1,
+						i + 1);
 				break;
 			case TYPE_FLOAT:
 				fprintf(out, "local %s = args_table and tonumber(args_table[%zu]) or 0.0\n", param->name, i + 1);

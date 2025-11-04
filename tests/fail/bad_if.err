@@ -1,1 +1,1 @@
-syntax error: syntax error
+tests/fail/bad_if.c:4:2: syntax error: syntax error

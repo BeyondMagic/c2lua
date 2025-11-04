@@ -3,6 +3,49 @@
 #include <stdlib.h>
 #include <string.h>
 #include "parser.tab.h"
+#include "lexer.h"
+
+int yy_line = 1;
+int yy_column = 1;
+int yy_token_line = 1;
+int yy_token_column = 1;
+static const char *yy_source_name = "<stdin>";
+
+void lexer_set_source_name(const char *name)
+{
+    yy_source_name = (name && *name) ? name : "<stdin>";
+}
+
+const char *lexer_get_source_name(void)
+{
+    return yy_source_name ? yy_source_name : "<stdin>";
+}
+
+void lexer_reset_position(void)
+{
+    yy_line = 1;
+    yy_column = 1;
+    yy_token_line = 1;
+    yy_token_column = 1;
+}
+
+#define YY_USER_ACTION                                                     \
+    {                                                                       \
+        yy_token_line = yy_line;                                              \
+        yy_token_column = yy_column;                                          \
+        for (int yy_i = 0; yy_i < yyleng; ++yy_i)                             \
+        {                                                                   \
+            if (yytext[yy_i] == '\n')                                        \
+            {                                                               \
+                yy_line++;                                                    \
+                yy_column = 1;                                                \
+            }                                                               \
+            else                                                            \
+            {                                                               \
+                yy_column++;                                                  \
+            }                                                               \
+        }                                                                   \
+    }
 
 static char *yy_strdup(const char *src)
 {
@@ -156,6 +199,6 @@ static long long yy_parse_char_literal(const char *src)
 "}"                                { return RBRACE; }
 \"([^\"\n]|\\.)*\"             { yylval.string = yy_parse_string_literal(yytext); return STRING_LITERAL; }
 '([^\\'\n]|\\.)'             { yylval.intValue = yy_parse_char_literal(yytext); return CHAR_LITERAL; }
-.                                  { fprintf(stderr, "invalid character '%s'\n", yytext); }
+.                                  { fprintf(stderr, "%s:%d:%d: invalid character '%s'\n", lexer_get_source_name(), yy_token_line, yy_token_column, yytext); }
 
 %%

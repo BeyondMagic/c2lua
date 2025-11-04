@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "ast.h"
+#include "lexer.h"
 
 static AstProgram *make_program_with_function(AstFunction *fn);
 int yyerror(AstProgram **out_program, const char *msg);
@@ -557,8 +558,13 @@ static void parser_error_cleanup(AstProgram **out_program)
 
 int yyerror(AstProgram **out_program, const char *msg)
 {
-    (void)out_program;
-    fprintf(stderr, "syntax error: %s\n", msg);
+  (void)out_program;
+  fprintf(stderr,
+    "%s:%d:%d: syntax error: %s\n",
+    lexer_get_source_name(),
+    yy_token_line,
+    yy_token_column,
+    msg ? msg : "unknown");
     return 0;
 }
 

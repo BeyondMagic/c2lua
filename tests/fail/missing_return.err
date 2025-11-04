@@ -1,1 +1,1 @@
-syntax error: syntax error
+tests/fail/missing_return.c:4:5: syntax error: syntax error
