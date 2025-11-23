@@ -129,6 +129,7 @@ int symbol_table_add(SymbolTable *table, const char *name, TypeKind type, int is
 	scope->items[scope->count].is_array = is_array ? 1 : 0;
 	scope->items[scope->count].array_size = array_size;
 	scope->items[scope->count].element_type = element_type;
+	scope->items[scope->count].used = 0; /* inicializa como não usado */
 	scope->count++;
 	return 1;
 }
@@ -152,6 +153,27 @@ const Symbol *symbol_table_lookup(const SymbolTable *table, const char *name)
 	}
 	return NULL;
 }
+
+/* Nova função: marca um símbolo como usado (procura do escopo atual para cima) */
+void symbol_table_mark_used(SymbolTable *table, const char *name)
+{
+	if (!table || !name)
+		return;
+	for (size_t depth = table->depth; depth > 0; --depth)
+	{
+		SymbolScope *scope = &table->scopes[depth - 1];
+		for (size_t i = 0; i < scope->count; ++i)
+		{
+			if (strcmp(scope->items[i].name, name) == 0)
+			{
+				scope->items[i].used = 1;
+				return;
+			}
+		}
+	}
+}
+
+/* ================= function table (sem alterações) ================== */
 
 void function_table_init(FunctionTable *table)
 {
