@@ -437,17 +437,21 @@ static TypeKind analyze_expression(SemanticInfo *info, SymbolTable *symbols, Ast
 		return expr->type;
 	}
 	case EXPR_IDENTIFIER:
-	{
-		const Symbol *symbol = symbol_table_lookup(symbols, expr->data.identifier);
-		if (!symbol)
-		{
-			semantic_error("use of undeclared identifier '%s'", expr->data.identifier);
-			expr->type = TYPE_UNKNOWN;
-			return expr->type;
-		}
-		expr->type = symbol->type;
-		return expr->type;
-	}
+{
+    const Symbol *symbol = symbol_table_lookup(symbols, expr->data.identifier);
+    if (!symbol)
+    {
+        semantic_error("use of undeclared identifier '%s'", expr->data.identifier);
+        expr->type = TYPE_UNKNOWN;
+        return expr->type;
+    }
+    /* marca o símbolo como usado (leitura) */
+    symbol_table_mark_used(symbols, expr->data.identifier);
+
+    expr->type = symbol->type;
+    return expr->type;
+}
+
 	case EXPR_SUBSCRIPT:
 	{
 		AstExpr *array_expr = expr->data.subscript.array;
