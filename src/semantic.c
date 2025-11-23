@@ -460,6 +460,7 @@ static TypeKind analyze_expression(SemanticInfo *info, SymbolTable *symbols, Ast
 			expr->type = TYPE_UNKNOWN;
 			return expr->type;
 		}
+		
 		const Symbol *symbol = symbol_table_lookup(symbols, array_expr->data.identifier);
 		if (!symbol)
 		{
@@ -467,6 +468,22 @@ static TypeKind analyze_expression(SemanticInfo *info, SymbolTable *symbols, Ast
 			expr->type = TYPE_UNKNOWN;
 			return expr->type;
 		}
+		case EXPR_IDENTIFIER:
+{
+    const Symbol *symbol = symbol_table_lookup(symbols, expr->data.identifier);
+    if (!symbol)
+    {
+        semantic_error("use of undeclared identifier '%s'", expr->data.identifier);
+        expr->type = TYPE_UNKNOWN;
+        return expr->type;
+    }
+    /* marca o símbolo como usado (leitura) */
+    symbol_table_mark_used(symbols, expr->data.identifier);
+
+    expr->type = symbol->type;
+    return expr->type;
+}
+
 		if (!symbol->is_array)
 		{
 			semantic_error("identifier '%s' is not an array", array_expr->data.identifier);
