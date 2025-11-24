@@ -5,6 +5,7 @@
 
 #include "ast.h"
 #include "codegen_lua.h"
+#include "optimizer.h"
 #include "semantic.h"
 #include "parser.tab.h"
 
@@ -38,6 +39,8 @@ int main(int argc, char **argv)
 		}
 		return EXIT_FAILURE;
 	}
+
+	optimize_program(program);
 
 	codegen_lua_emit(stdout, program, &sem_info.functions);
 
