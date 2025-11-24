@@ -313,8 +313,8 @@ static int analyze_statement(SemanticInfo *info, AstFunction *fn, SymbolTable *s
 		if (!is_boolean_like(cond_type))
 		{
 			semantic_error("while condition in function '%s' must be boolean-compatible but found %s",
-					   fn->name,
-					   ast_type_name(cond_type));
+						   fn->name,
+						   ast_type_name(cond_type));
 			return 0;
 		}
 		int loop_has_return = 0;
@@ -339,8 +339,8 @@ static int analyze_statement(SemanticInfo *info, AstFunction *fn, SymbolTable *s
 			if (!is_boolean_like(cond_type))
 			{
 				semantic_error("for condition in function '%s' must be boolean-compatible but found %s",
-					   fn->name,
-					   ast_type_name(cond_type));
+							   fn->name,
+							   ast_type_name(cond_type));
 				ok = 0;
 			}
 		}
@@ -414,7 +414,10 @@ static TypeKind analyze_expression(SemanticInfo *info, SymbolTable *symbols, Ast
 	switch (expr->kind)
 	{
 	case EXPR_INT_LITERAL:
-		expr->type = TYPE_INT;
+		if (expr->type != TYPE_CHAR)
+		{
+			expr->type = TYPE_INT;
+		}
 		return expr->type;
 	case EXPR_FLOAT_LITERAL:
 		expr->type = TYPE_FLOAT;
@@ -629,11 +632,11 @@ static int ensure_assignable(TypeKind target, TypeKind value)
 	{
 		return target == TYPE_STRING && value == TYPE_STRING;
 	}
-	if (target == TYPE_BOOL && (value == TYPE_INT || value == TYPE_FLOAT || value == TYPE_BOOL))
+	if (target == TYPE_BOOL && (is_numeric(value) || value == TYPE_BOOL))
 	{
 		return 1;
 	}
-	if ((target == TYPE_INT || target == TYPE_FLOAT) && value == TYPE_BOOL)
+	if (is_numeric(target) && value == TYPE_BOOL)
 	{
 		return 1;
 	}
@@ -650,12 +653,12 @@ static int ensure_assignable(TypeKind target, TypeKind value)
 
 static int is_numeric(TypeKind type)
 {
-	return type == TYPE_INT || type == TYPE_FLOAT;
+	return type == TYPE_INT || type == TYPE_FLOAT || type == TYPE_CHAR;
 }
 
 static int is_boolean_like(TypeKind type)
 {
-	return type == TYPE_BOOL || type == TYPE_INT || type == TYPE_FLOAT;
+	return type == TYPE_BOOL || type == TYPE_INT || type == TYPE_FLOAT || type == TYPE_CHAR;
 }
 
 static TypeKind arithmetic_result(TypeKind left, TypeKind right)

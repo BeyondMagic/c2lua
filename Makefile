@@ -7,8 +7,9 @@ TARGET = c2lua
 SRC = src/main.c \
 	  src/ast.c \
 	  src/symbol_table.c \
-	  src/semantic.c \
-	  src/codegen_lua.c
+	src/semantic.c \
+	src/codegen_lua.c \
+	src/optimizer.c
 LEX_SRC = src/lexer.l
 YACC_SRC = src/parser.y
 

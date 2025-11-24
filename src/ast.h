@@ -7,6 +7,7 @@ typedef enum
 {
 	TYPE_UNKNOWN = 0,
 	TYPE_INT,
+	TYPE_CHAR,
 	TYPE_FLOAT,
 	TYPE_BOOL,
 	TYPE_STRING,
@@ -236,6 +237,7 @@ AstExpr *ast_expr_make_array_literal(AstExprList *elements);
 AstExpr *ast_expr_make_subscript(AstExpr *array, AstExpr *index);
 
 AstExpr *ast_expr_make_int(long long value);
+AstExpr *ast_expr_make_char(long long value);
 AstExpr *ast_expr_make_float(double value);
 AstExpr *ast_expr_make_bool(int value);
 AstExpr *ast_expr_make_string(char *value);

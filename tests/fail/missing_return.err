@@ -1,1 +1,1 @@
-Erro [1:1]: controle: função 'f' (retorna int) pode sair sem return
+tests/fail/missing_return.c:4:5: syntax error: syntax error

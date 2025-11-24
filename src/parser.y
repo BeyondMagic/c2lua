@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "ast.h"
+#include "lexer.h"
 
 static AstProgram *make_program_with_function(AstFunction *fn);
 int yyerror(AstProgram **out_program, const char *msg);
@@ -42,11 +43,11 @@ static void parser_error_cleanup(AstProgram **out_program);
   AstProgram *program;
 }
 
-%token <intValue> INT_LITERAL
+%token <intValue> INT_LITERAL CHAR_LITERAL
 %token <floatValue> FLOAT_LITERAL
 %token <id> IDENT
 %token <string> STRING_LITERAL
-%token KW_INT KW_FLOAT KW_BOOL KW_VOID
+%token KW_INT KW_CHAR KW_FLOAT KW_BOOL KW_VOID
 %token RETURN
 %token WHILE FOR
 %token TRUE FALSE
@@ -109,6 +110,7 @@ function_definition
 
 type_specifier
     : KW_INT   { $$ = TYPE_INT; }
+    | KW_CHAR  { $$ = TYPE_CHAR; }
     | KW_FLOAT { $$ = TYPE_FLOAT; }
     | KW_BOOL  { $$ = TYPE_BOOL; }
     | KW_VOID  { $$ = TYPE_VOID; }
@@ -474,6 +476,10 @@ primary_expression
       {
           $$ = ast_expr_make_int($1);
       }
+    | CHAR_LITERAL
+      {
+          $$ = ast_expr_make_char($1);
+      }
     | FLOAT_LITERAL
       {
           $$ = ast_expr_make_float($1);
@@ -553,7 +559,12 @@ static void parser_error_cleanup(AstProgram **out_program)
 int yyerror(AstProgram **out_program, const char *msg)
 {
     (void)out_program;
-    fprintf(stderr, "syntax error: %s\n", msg);
+    fprintf(stderr,
+        "%s:%d:%d: syntax error: %s\n",
+        lexer_get_source_name(),
+        yy_token_line,
+        yy_token_column,
+        msg ? msg : "unknown");
     return 0;
 }
 

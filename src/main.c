@@ -5,6 +5,8 @@
 
 #include "ast.h"
 #include "codegen_lua.h"
+#include "lexer.h"
+#include "optimizer.h"
 #include "semantic.h"
 #include "parser.tab.h"
 
@@ -17,6 +19,10 @@ int main(int argc, char **argv)
 	{
 		return EXIT_FAILURE;
 	}
+
+	const char *source_name = (argc == 2) ? argv[1] : "<stdin>";
+	lexer_set_source_name(source_name);
+	lexer_reset_position();
 
 	AstProgram *program = c2lua_parse(input);
 	if (!program)
@@ -38,6 +44,8 @@ int main(int argc, char **argv)
 		}
 		return EXIT_FAILURE;
 	}
+
+	optimize_program(program);
 
 	codegen_lua_emit(stdout, program, &sem_info.functions);
 

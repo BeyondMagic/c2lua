@@ -1,1 +1,1 @@
-Erro [2:11]: tipo: atribuição int <- string não permitida
+semantic error: cannot initialize 'x' of type int with expression of type string in function 'main'
