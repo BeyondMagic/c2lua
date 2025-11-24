@@ -78,8 +78,8 @@ static char *yy_parse_string_literal(const char *src)
 "for"                              { return FOR; }
 "true"                             { return TRUE; }
 "false"                            { return FALSE; }
-"\\["                               { return LBRACKET; }
-"\\]"                               { return RBRACKET; }
+"\["                               { return LBRACKET; }
+"\]"                               { return RBRACKET; }
 "//"[^\n]*                         { /* skip single line comments */ }
 "/*"                { BEGIN(COMMENT); }
 <COMMENT>{
