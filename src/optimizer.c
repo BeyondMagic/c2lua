@@ -509,10 +509,6 @@ static int compare_entries_by_index(const void *lhs, const void *rhs)
 {
 	const CseEntry *const *a = lhs;
 	const CseEntry *const *b = rhs;
-	if (!a || !b)
-	{
-		return 0;
-	}
 	if ((*a)->first_stmt_index < (*b)->first_stmt_index)
 	{
 		return -1;
