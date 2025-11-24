@@ -1,1 +1,1 @@
-Erro [4:3]: escopo: símbolo 'y' não encontrado
+semantic error: assignment to undeclared identifier 'y' in function 'main'
