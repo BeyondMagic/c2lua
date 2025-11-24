@@ -530,7 +530,12 @@ static char *expr_make_key(const AstExpr *expr)
 	switch (expr->kind)
 	{
 	case EXPR_INT_LITERAL:
-		snprintf(buffer, sizeof(buffer), "I:%lld", expr->data.int_value);
+		// Include type information in the key to distinguish between int and char literals
+		if (expr->type == TYPE_CHAR) {
+			snprintf(buffer, sizeof(buffer), "C:%lld", expr->data.int_value);
+		} else {
+			snprintf(buffer, sizeof(buffer), "I:%lld", expr->data.int_value);
+		}
 		return dup_string(buffer);
 	case EXPR_FLOAT_LITERAL:
 		snprintf(buffer, sizeof(buffer), "F:%g", expr->data.float_value);
