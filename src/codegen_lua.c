@@ -163,6 +163,11 @@ static void emit_statement(FILE *out, const AstStmt *stmt, const FunctionTable *
 		emit_block(out, &stmt->data.block, functions, signature, indent, 1);
 		break;
 	case STMT_DECL:
+		if (!stmt->data.decl.is_used && !stmt->data.decl.is_array)
+		{
+			return; // Dead Code Elimination: Variável desaparece do Lua!
+		}
+
 		if (stmt->data.decl.is_array)
 		{
 			emit_array_declaration(out, stmt, functions, indent);
