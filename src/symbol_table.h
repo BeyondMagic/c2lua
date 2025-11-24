@@ -10,8 +10,9 @@ typedef struct
 	int is_array;
 	size_t array_size;
 	TypeKind element_type;
+    struct AstStmt *stmt_ref;
 } Symbol;
-
+int symbol_table_add(SymbolTable *table, const char *name, TypeKind type, int is_array, size_t array_size, TypeKind element_type, struct AstStmt *stmt_ref);
 typedef struct
 {
 	Symbol *items;
