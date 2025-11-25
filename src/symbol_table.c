@@ -109,7 +109,7 @@ void symbol_table_pop_scope(SymbolTable *table)
 	table->depth--;
 }
 
-int symbol_table_add(SymbolTable *table, const char *name, TypeKind type, int is_array, size_t array_size, TypeKind element_type)
+int symbol_table_add(SymbolTable *table, const char *name, TypeKind type, int is_array, size_t array_size, TypeKind element_type, AstStmt *stmt_ref)
 {
 	if (!table || table->depth == 0 || !name)
 	{
@@ -129,6 +129,8 @@ int symbol_table_add(SymbolTable *table, const char *name, TypeKind type, int is
 	scope->items[scope->count].is_array = is_array ? 1 : 0;
 	scope->items[scope->count].array_size = array_size;
 	scope->items[scope->count].element_type = element_type;
+	scope->items[scope->count].stmt_ref = stmt_ref;
+
 	scope->count++;
 	return 1;
 }

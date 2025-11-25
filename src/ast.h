@@ -159,6 +159,8 @@ typedef struct AstStmt
 			int is_array;
 			size_t array_size;
 			AstExpr *array_init;
+
+			int is_used;
 		} decl;
 		struct
 		{

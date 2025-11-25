@@ -88,7 +88,7 @@ static int analyze_function(SemanticInfo *info, AstFunction *fn)
 			symbol_table_free(&symbols);
 			return 0;
 		}
-		if (!symbol_table_add(&symbols, param->name, param->type, 0, 0, TYPE_UNKNOWN))
+		if (!symbol_table_add(&symbols, param->name, param->type, 0, 0, TYPE_UNKNOWN, NULL))
 		{
 			semantic_error("duplicate parameter '%s' in function '%s'", param->name, fn->name);
 			symbol_table_free(&symbols);
@@ -184,7 +184,8 @@ static int analyze_statement(SemanticInfo *info, AstFunction *fn, SymbolTable *s
 								  TYPE_ARRAY,
 								  1,
 								  stmt->data.decl.array_size,
-								  stmt->data.decl.type))
+								  stmt->data.decl.type,
+								  stmt))
 			{
 				semantic_error("duplicate declaration of '%s' in function '%s'", stmt->data.decl.name, fn->name);
 				return 0;
@@ -222,7 +223,7 @@ static int analyze_statement(SemanticInfo *info, AstFunction *fn, SymbolTable *s
 		}
 		else
 		{
-			if (!symbol_table_add(symbols, stmt->data.decl.name, stmt->data.decl.type, 0, 0, TYPE_UNKNOWN))
+			if (!symbol_table_add(symbols, stmt->data.decl.name, stmt->data.decl.type, 0, 0, TYPE_UNKNOWN, stmt))
 			{
 				semantic_error("duplicate declaration of '%s' in function '%s'", stmt->data.decl.name, fn->name);
 				return 0;
@@ -448,6 +449,11 @@ static TypeKind analyze_expression(SemanticInfo *info, SymbolTable *symbols, Ast
 			expr->type = TYPE_UNKNOWN;
 			return expr->type;
 		}
+		if (symbol->stmt_ref)
+		{
+			symbol->stmt_ref->data.decl.is_used = 1;
+		}
+
 		expr->type = symbol->type;
 		return expr->type;
 	}
