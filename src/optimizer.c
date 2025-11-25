@@ -8,6 +8,7 @@ typedef struct
 {
 	AstExpr **location;
 	size_t stmt_index;
+	AstStmt *stmt;
 } CseOccurrence;
 
 typedef struct
@@ -32,15 +33,15 @@ static void optimize_block(AstBlock *block);
 static void optimize_statement_children(AstStmt *stmt);
 static void collect_block_candidates(AstBlock *block, CseEntryList *entries);
 static void collect_statement_candidates(AstStmt *stmt, size_t stmt_index, CseEntryList *entries);
-static void collect_expr_candidates(AstExpr **expr_ptr, size_t stmt_index, CseEntryList *entries);
+static void collect_expr_candidates(AstExpr **expr_ptr, size_t stmt_index, AstStmt *owner, CseEntryList *entries);
 static int expr_is_constant(const AstExpr *expr);
 static int expr_is_candidate(const AstExpr *expr);
 static char *expr_make_key(const AstExpr *expr);
-static void register_candidate(CseEntryList *entries, AstExpr **expr_ptr, size_t stmt_index);
+static void register_candidate(CseEntryList *entries, AstExpr **expr_ptr, size_t stmt_index, AstStmt *owner);
 static CseEntry *find_entry(CseEntryList *entries, const char *key);
 static void ensure_entry_capacity(CseEntryList *list, size_t needed);
 static void ensure_occ_capacity(CseEntry *entry, size_t needed);
-static void add_occurrence(CseEntry *entry, AstExpr **location, size_t stmt_index);
+static void add_occurrence(CseEntry *entry, AstExpr **location, size_t stmt_index, AstStmt *stmt);
 static void apply_cse(AstBlock *block, CseEntryList *entries);
 static void insert_statement(AstStmtList *list, size_t index, AstStmt *stmt);
 static AstExpr *make_temp_identifier(const char *name, TypeKind type);
@@ -49,6 +50,7 @@ static void free_entries(CseEntryList *entries);
 static char *dup_string(const char *value);
 static void *xmalloc(size_t size);
 static int compare_entries_by_index(const void *lhs, const void *rhs);
+static int occurrence_survives_dce(const CseOccurrence *occ);
 
 void optimize_program(AstProgram *program)
 {
@@ -138,20 +140,20 @@ static void collect_statement_candidates(AstStmt *stmt, size_t stmt_index, CseEn
 	case STMT_DECL:
 		if (!stmt->data.decl.is_array && stmt->data.decl.init)
 		{
-			collect_expr_candidates(&stmt->data.decl.init, stmt_index, entries);
+			collect_expr_candidates(&stmt->data.decl.init, stmt_index, stmt, entries);
 		}
 		break;
 	case STMT_ASSIGN:
-		collect_expr_candidates(&stmt->data.assign.value, stmt_index, entries);
+		collect_expr_candidates(&stmt->data.assign.value, stmt_index, stmt, entries);
 		break;
 	case STMT_ARRAY_ASSIGN:
-		collect_expr_candidates(&stmt->data.array_assign.value, stmt_index, entries);
+		collect_expr_candidates(&stmt->data.array_assign.value, stmt_index, stmt, entries);
 		break;
 	case STMT_EXPR:
 	case STMT_RETURN:
 		if (stmt->data.expr)
 		{
-			collect_expr_candidates(&stmt->data.expr, stmt_index, entries);
+			collect_expr_candidates(&stmt->data.expr, stmt_index, stmt, entries);
 		}
 		break;
 	case STMT_WHILE:
@@ -164,7 +166,7 @@ static void collect_statement_candidates(AstStmt *stmt, size_t stmt_index, CseEn
 	}
 }
 
-static void collect_expr_candidates(AstExpr **expr_ptr, size_t stmt_index, CseEntryList *entries)
+static void collect_expr_candidates(AstExpr **expr_ptr, size_t stmt_index, AstStmt *owner, CseEntryList *entries)
 {
 	if (!expr_ptr || !*expr_ptr)
 	{
@@ -176,27 +178,27 @@ static void collect_expr_candidates(AstExpr **expr_ptr, size_t stmt_index, CseEn
 	switch (expr->kind)
 	{
 	case EXPR_BINARY:
-		collect_expr_candidates(&expr->data.binary.left, stmt_index, entries);
-		collect_expr_candidates(&expr->data.binary.right, stmt_index, entries);
+		collect_expr_candidates(&expr->data.binary.left, stmt_index, owner, entries);
+		collect_expr_candidates(&expr->data.binary.right, stmt_index, owner, entries);
 		break;
 	case EXPR_UNARY:
-		collect_expr_candidates(&expr->data.unary.operand, stmt_index, entries);
+		collect_expr_candidates(&expr->data.unary.operand, stmt_index, owner, entries);
 		break;
 	case EXPR_CALL:
 		for (size_t i = 0; i < expr->data.call.args.count; ++i)
 		{
-			collect_expr_candidates(&expr->data.call.args.items[i], stmt_index, entries);
+			collect_expr_candidates(&expr->data.call.args.items[i], stmt_index, owner, entries);
 		}
 		break;
 	case EXPR_ARRAY_LITERAL:
 		for (size_t i = 0; i < expr->data.array_literal.elements.count; ++i)
 		{
-			collect_expr_candidates(&expr->data.array_literal.elements.items[i], stmt_index, entries);
+			collect_expr_candidates(&expr->data.array_literal.elements.items[i], stmt_index, owner, entries);
 		}
 		break;
 	case EXPR_SUBSCRIPT:
-		collect_expr_candidates(&expr->data.subscript.array, stmt_index, entries);
-		collect_expr_candidates(&expr->data.subscript.index, stmt_index, entries);
+		collect_expr_candidates(&expr->data.subscript.array, stmt_index, owner, entries);
+		collect_expr_candidates(&expr->data.subscript.index, stmt_index, owner, entries);
 		break;
 	default:
 		break;
@@ -204,7 +206,7 @@ static void collect_expr_candidates(AstExpr **expr_ptr, size_t stmt_index, CseEn
 
 	if (expr_is_candidate(expr))
 	{
-		register_candidate(entries, expr_ptr, stmt_index);
+		register_candidate(entries, expr_ptr, stmt_index, owner);
 	}
 }
 
@@ -244,7 +246,7 @@ static int expr_is_candidate(const AstExpr *expr)
 	return expr_is_constant(expr);
 }
 
-static void register_candidate(CseEntryList *entries, AstExpr **expr_ptr, size_t stmt_index)
+static void register_candidate(CseEntryList *entries, AstExpr **expr_ptr, size_t stmt_index, AstStmt *owner)
 {
 	if (!entries || !expr_ptr || !*expr_ptr)
 	{
@@ -273,7 +275,7 @@ static void register_candidate(CseEntryList *entries, AstExpr **expr_ptr, size_t
 			entry->first_stmt_index = stmt_index;
 		}
 	}
-	add_occurrence(entry, expr_ptr, stmt_index);
+	add_occurrence(entry, expr_ptr, stmt_index, owner);
 }
 
 static CseEntry *find_entry(CseEntryList *entries, const char *key)
@@ -342,7 +344,7 @@ static void ensure_occ_capacity(CseEntry *entry, size_t needed)
 	entry->occurrence_capacity = new_capacity;
 }
 
-static void add_occurrence(CseEntry *entry, AstExpr **location, size_t stmt_index)
+static void add_occurrence(CseEntry *entry, AstExpr **location, size_t stmt_index, AstStmt *stmt)
 {
 	if (!entry)
 	{
@@ -351,6 +353,7 @@ static void add_occurrence(CseEntry *entry, AstExpr **location, size_t stmt_inde
 	ensure_occ_capacity(entry, entry->occurrence_count + 1);
 	entry->occurrences[entry->occurrence_count].location = location;
 	entry->occurrences[entry->occurrence_count].stmt_index = stmt_index;
+	entry->occurrences[entry->occurrence_count].stmt = stmt;
 	entry->occurrence_count++;
 }
 
@@ -411,7 +414,21 @@ static void apply_cse(AstBlock *block, CseEntryList *entries)
 			}
 		}
 
+		int has_live_use = 0;
+		for (size_t j = 0; j < entry->occurrence_count; ++j)
+		{
+			if (occurrence_survives_dce(&entry->occurrences[j]))
+			{
+				has_live_use = 1;
+				break;
+			}
+		}
+
 		AstStmt *decl = ast_stmt_make_decl(entry->type, dup_string(temp_name), init_expr);
+		if (has_live_use)
+		{
+			decl->data.decl.is_used = 1; /* mark as live so DCE keeps this temp */
+		}
 		insert_statement(&block->statements, entry->first_stmt_index + inserted, decl);
 		inserted++;
 		free(temp_name);
@@ -520,6 +537,19 @@ static int compare_entries_by_index(const void *lhs, const void *rhs)
 	return 0;
 }
 
+static int occurrence_survives_dce(const CseOccurrence *occ)
+{
+	if (!occ || !occ->stmt)
+	{
+		return 1;
+	}
+	if (occ->stmt->kind != STMT_DECL)
+	{
+		return 1;
+	}
+	return occ->stmt->data.decl.is_used != 0;
+}
+
 static char *expr_make_key(const AstExpr *expr)
 {
 	if (!expr)
@@ -531,9 +561,12 @@ static char *expr_make_key(const AstExpr *expr)
 	{
 	case EXPR_INT_LITERAL:
 		// Include type information in the key to distinguish between int and char literals
-		if (expr->type == TYPE_CHAR) {
+		if (expr->type == TYPE_CHAR)
+		{
 			snprintf(buffer, sizeof(buffer), "C:%lld", expr->data.int_value);
-		} else {
+		}
+		else
+		{
 			snprintf(buffer, sizeof(buffer), "I:%lld", expr->data.int_value);
 		}
 		return dup_string(buffer);

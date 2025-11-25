@@ -20,6 +20,7 @@ static void emit_string_literal(FILE *out, const char *value);
 static void emit_array_declaration(FILE *out, const AstStmt *stmt, const FunctionTable *functions, int indent);
 static void emit_array_literal_expr(FILE *out, const AstExprList *elements, const FunctionTable *functions);
 static void emit_array_index(FILE *out, const AstExpr *expr, const FunctionTable *functions);
+static int expr_has_side_effects(const AstExpr *expr);
 static void emit_array_default_value(FILE *out, TypeKind type);
 static const FunctionSignature *lookup_signature(const FunctionTable *functions, const char *name);
 static const char *binary_op_token(AstBinaryOp op);
@@ -165,7 +166,10 @@ static void emit_statement(FILE *out, const AstStmt *stmt, const FunctionTable *
 	case STMT_DECL:
 		if (!stmt->data.decl.is_used && !stmt->data.decl.is_array)
 		{
-			return; // Dead Code Elimination: Variável desaparece do Lua!
+			if (!stmt->data.decl.init || !expr_has_side_effects(stmt->data.decl.init))
+			{
+				return; // Dead Code Elimination: remove unused locals without side effects
+			}
 		}
 
 		if (stmt->data.decl.is_array)
@@ -393,6 +397,43 @@ static void emit_expression_raw(FILE *out, const AstExpr *expr, const FunctionTa
 		emit_array_index(out, expr->data.subscript.index, functions);
 		fputc(']', out);
 		break;
+	}
+}
+
+static int expr_has_side_effects(const AstExpr *expr)
+{
+	if (!expr)
+	{
+		return 0;
+	}
+
+	switch (expr->kind)
+	{
+	case EXPR_CALL:
+		return 1;
+	case EXPR_BINARY:
+		return expr_has_side_effects(expr->data.binary.left) || expr_has_side_effects(expr->data.binary.right);
+	case EXPR_UNARY:
+		return expr_has_side_effects(expr->data.unary.operand);
+	case EXPR_SUBSCRIPT:
+		return expr_has_side_effects(expr->data.subscript.array) || expr_has_side_effects(expr->data.subscript.index);
+	case EXPR_ARRAY_LITERAL:
+		for (size_t i = 0; i < expr->data.array_literal.elements.count; ++i)
+		{
+			if (expr_has_side_effects(expr->data.array_literal.elements.items[i]))
+			{
+				return 1;
+			}
+		}
+		return 0;
+	case EXPR_IDENTIFIER:
+	case EXPR_INT_LITERAL:
+	case EXPR_FLOAT_LITERAL:
+	case EXPR_BOOL_LITERAL:
+	case EXPR_STRING_LITERAL:
+		return 0;
+	default:
+		return 0;
 	}
 }
 

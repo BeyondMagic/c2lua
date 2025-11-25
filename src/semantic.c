@@ -184,7 +184,8 @@ static int analyze_statement(SemanticInfo *info, AstFunction *fn, SymbolTable *s
 								  TYPE_ARRAY,
 								  1,
 								  stmt->data.decl.array_size,
-								  stmt->data.decl.type))
+								  stmt->data.decl.type,
+								  stmt))
 			{
 				semantic_error("duplicate declaration of '%s' in function '%s'", stmt->data.decl.name, fn->name);
 				return 0;
@@ -448,14 +449,11 @@ static TypeKind analyze_expression(SemanticInfo *info, SymbolTable *symbols, Ast
 			expr->type = TYPE_UNKNOWN;
 			return expr->type;
 		}
-		expr->type = symbol->type;
-		return expr->type;
-	}
-	if (symbol->stmt_ref)
-        {
-            symbol->stmt_ref->data.decl.is_used = 1;
-        }
-        // ---------------------------
+		if (symbol->stmt_ref)
+		{
+			symbol->stmt_ref->data.decl.is_used = 1;
+		}
+		// ---------------------------
 
 		expr->type = symbol->type;
 		return expr->type;

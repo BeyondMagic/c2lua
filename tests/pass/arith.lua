@@ -5,5 +5,6 @@ os.exit((function(args)
 	local x = 7
 	local y = 3
 	local z = (x % y)
-	return x
+	print(string.format("%f %d", c, z))
+	return 0
 end)(arg))

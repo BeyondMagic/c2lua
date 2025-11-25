@@ -6,5 +6,6 @@ int main()
 	int x = 7;
 	int y = 3;
 	int z = x % y; // ok: % em inteiros
-	return x;
+	printf("%f %d\n", c, z);
+	return 0;
 }
