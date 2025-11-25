@@ -170,6 +170,11 @@ static void emit_statement(FILE *out, const AstStmt *stmt, const FunctionTable *
 			{
 				return; // Dead Code Elimination: remove unused locals without side effects
 			}
+			// Unused variable with initializer that has side effects: emit only the initializer as a statement
+			emit_indent(out, indent);
+			emit_expression_expected(out, stmt->data.decl.init, functions, stmt->data.decl.type);
+			fputc('\n', out);
+			return;
 		}
 
 		if (stmt->data.decl.is_array)
