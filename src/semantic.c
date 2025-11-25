@@ -453,7 +453,6 @@ static TypeKind analyze_expression(SemanticInfo *info, SymbolTable *symbols, Ast
 		{
 			symbol->stmt_ref->data.decl.is_used = 1;
 		}
-		// ---------------------------
 
 		expr->type = symbol->type;
 		return expr->type;
