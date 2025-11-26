@@ -51,6 +51,7 @@ static char *dup_string(const char *value);
 static void *xmalloc(size_t size);
 static int compare_entries_by_index(const void *lhs, const void *rhs);
 static int occurrence_survives_dce(const CseOccurrence *occ);
+static void eliminate_unreachable(AstStmtList *list);
 
 void optimize_program(AstProgram *program)
 {
@@ -89,6 +90,7 @@ static void optimize_block(AstBlock *block)
 	{
 		optimize_statement_children(block->statements.items[i]);
 	}
+	eliminate_unreachable(&block->statements);
 }
 
 static void optimize_statement_children(AstStmt *stmt)
@@ -608,3 +610,24 @@ static char *expr_make_key(const AstExpr *expr)
 		return dup_string("<unsupported>");
 	}
 }
+
+static void eliminate_unreachable(AstStmtList *list) {
+    if (!list) return;
+
+    int after_return = 0;
+    size_t write = 0;
+
+    for (size_t i = 0; i < list->count; i++) {
+        AstStmt *s = list->items[i];
+        if (after_return) {
+            continue;
+        }
+        list->items[write++] = s;
+        if (s->kind == STMT_RETURN) {
+            after_return = 1;
+        }
+    }
+
+    list->count = write;
+}
+
