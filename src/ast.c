@@ -37,7 +37,7 @@ static void ensure_capacity(void **buffer, size_t elem_size, size_t *capacity, s
 }
 
 static void ast_expr_destroy(AstExpr *expr);
-static void ast_stmt_destroy(AstStmt *stmt);
+void ast_stmt_destroy(AstStmt *stmt);
 
 AstProgram *ast_program_create(void)
 {
@@ -229,7 +229,7 @@ void ast_stmt_list_destroy(AstStmtList *list)
 	list->capacity = 0;
 }
 
-static void ast_stmt_destroy(AstStmt *stmt)
+void ast_stmt_destroy(AstStmt *stmt)
 {
 	if (!stmt)
 	{
