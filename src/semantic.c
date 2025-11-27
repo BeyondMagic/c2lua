@@ -362,6 +362,37 @@ static int analyze_statement(SemanticInfo *info, AstFunction *fn, SymbolTable *s
 		}
 		break;
 	}
+
+	case STMT_IF:
+	{
+		TypeKind cond_type = analyze_expression(info, symbols, stmt->data.if_stmt.condition);
+		stmt->data.if_stmt.condition->type = cond_type;
+
+		if (!is_boolean_like(cond_type))
+		{
+			semantic_error("if condition in function '%s' must be boolean-compatible but found %s",
+						   fn->name,
+						   ast_type_name(cond_type));
+			return 0;
+		}
+
+		int then_has_return = 0;
+		if (!analyze_statement(info, fn, symbols, stmt->data.if_stmt.then_branch, &then_has_return))
+			return 0;
+
+		int else_has_return = 0;
+		if (stmt->data.if_stmt.else_branch)
+		{
+			if (!analyze_statement(info, fn, symbols, stmt->data.if_stmt.else_branch, &else_has_return))
+				return 0;
+		}
+
+		if (then_has_return && stmt->data.if_stmt.else_branch && else_has_return)
+			*has_return = 1;
+
+		break;
+	}
+
 	case STMT_EXPR:
 		if (stmt->data.expr)
 		{
