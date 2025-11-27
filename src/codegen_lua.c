@@ -289,7 +289,6 @@ static void emit_statement(FILE *out, const AstStmt *stmt, const FunctionTable *
 	}
 }
 
-/* resto do arquivo fica igual ao seu original */
 
 static void emit_expression_expected(FILE *out, const AstExpr *expr, const FunctionTable *functions, TypeKind expected_type)
 {
