@@ -270,6 +270,12 @@ void ast_stmt_destroy(AstStmt *stmt)
 		ast_stmt_destroy(stmt->data.for_stmt.post);
 		ast_stmt_destroy(stmt->data.for_stmt.body);
 		break;
+	case STMT_IF:
+		ast_expr_destroy(stmt->data.if_stmt.condition);
+		ast_stmt_destroy(stmt->data.if_stmt.then_branch);
+		if (stmt->data.if_stmt.else_branch)
+			ast_stmt_destroy(stmt->data.if_stmt.else_branch);
+		break;
 	case STMT_EXPR:
 	case STMT_RETURN:
 		if (stmt->data.expr)
@@ -374,6 +380,16 @@ AstStmt *ast_stmt_make_for(AstStmt *init, AstExpr *condition, AstStmt *post, Ast
 	stmt->data.for_stmt.condition = condition;
 	stmt->data.for_stmt.post = post;
 	stmt->data.for_stmt.body = body;
+	return stmt;
+}
+
+AstStmt *ast_stmt_make_if(AstExpr *condition, AstStmt *then_branch, AstStmt *else_branch)
+{
+	AstStmt *stmt = xcalloc(1, sizeof(AstStmt));
+	stmt->kind = STMT_IF;
+	stmt->data.if_stmt.condition = condition;
+	stmt->data.if_stmt.then_branch = then_branch;
+	stmt->data.if_stmt.else_branch = else_branch;
 	return stmt;
 }
 
