@@ -194,7 +194,7 @@ typedef struct AstStmt
 		{
 			AstExpr *condition;
 			struct AstStmt *then_branch;
-			struct AstStmt *else_branch; 
+			struct AstStmt *else_branch;
 		} if_stmt;
 
 		AstExpr *expr;
