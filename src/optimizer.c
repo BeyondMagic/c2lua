@@ -51,6 +51,126 @@ static char *dup_string(const char *value);
 static void *xmalloc(size_t size);
 static int compare_entries_by_index(const void *lhs, const void *rhs);
 static int occurrence_survives_dce(const CseOccurrence *occ);
+
+static int expr_is_constant_bool(const AstExpr *expr, int *out_value)
+{
+	if (!expr)
+		return 0;
+
+	switch (expr->kind)
+	{
+	case EXPR_BOOL_LITERAL:
+		*out_value = expr->data.bool_value ? 1 : 0;
+		return 1;
+
+	case EXPR_INT_LITERAL:
+		*out_value = (expr->data.int_value != 0);
+		return 1;
+
+	case EXPR_FLOAT_LITERAL:
+		*out_value = (expr->data.float_value != 0.0);
+		return 1;
+
+	case EXPR_UNARY:
+		if (expr->data.unary.op == UN_OP_NOT)
+		{
+			int v;
+			if (!expr_is_constant_bool(expr->data.unary.operand, &v))
+				return 0;
+			*out_value = !v;
+			return 1;
+		}
+		return expr_is_constant_bool(expr->data.unary.operand, out_value);
+
+	case EXPR_BINARY:
+	{
+		int l, r;
+		if (!expr_is_constant_bool(expr->data.binary.left, &l))
+			return 0;
+		if (!expr_is_constant_bool(expr->data.binary.right, &r))
+			return 0;
+
+		switch (expr->data.binary.op)
+		{
+		case BIN_OP_AND:
+			*out_value = l && r;
+			return 1;
+		case BIN_OP_OR:
+			*out_value = l || r;
+			return 1;
+		case BIN_OP_EQ:
+			*out_value = (l == r);
+			return 1;
+		case BIN_OP_NEQ:
+			*out_value = (l != r);
+			return 1;
+		default:
+			return 0;
+		}
+	}
+
+	default:
+		return 0;
+	}
+}
+
+static void optimize_if_constants(AstBlock *block)
+{
+	if (!block)
+		return;
+
+	for (size_t i = 0; i < block->statements.count;)
+	{
+		AstStmt *stmt = block->statements.items[i];
+		if (!stmt)
+		{
+			i++;
+			continue;
+		}
+
+		if (stmt->kind == STMT_IF)
+		{
+			int cond;
+			if (expr_is_constant_bool(stmt->data.if_stmt.condition, &cond))
+			{
+				AstStmt *replacement = NULL;
+
+				if (cond)
+				{
+					replacement = stmt->data.if_stmt.then_branch;
+					stmt->data.if_stmt.then_branch = NULL;
+				}
+				else
+				{
+					replacement = stmt->data.if_stmt.else_branch;
+					stmt->data.if_stmt.else_branch = NULL;
+				}
+
+				ast_expr_list_destroy(NULL);
+				{
+				}
+				free(stmt->data.if_stmt.condition);
+				free(stmt);
+
+				if (replacement)
+				{
+					block->statements.items[i] = replacement;
+					continue;
+				}
+				else
+				{
+					memmove(&block->statements.items[i],
+							&block->statements.items[i + 1],
+							(block->statements.count - i - 1) * sizeof(AstStmt *));
+					block->statements.count--;
+					continue;
+				}
+			}
+		}
+
+		i++;
+	}
+}
 static void eliminate_unreachable(AstStmtList *list);
 
 void optimize_program(AstProgram *program)
@@ -80,6 +200,8 @@ static void optimize_block(AstBlock *block)
 	{
 		return;
 	}
+
+	optimize_if_constants(block);
 
 	CseEntryList entries = {0};
 	collect_block_candidates(block, &entries);
@@ -112,6 +234,11 @@ static void optimize_statement_children(AstStmt *stmt)
 		optimize_statement_children(stmt->data.for_stmt.init);
 		optimize_statement_children(stmt->data.for_stmt.body);
 		optimize_statement_children(stmt->data.for_stmt.post);
+		break;
+	case STMT_IF:
+		optimize_statement_children(stmt->data.if_stmt.then_branch);
+		if (stmt->data.if_stmt.else_branch)
+			optimize_statement_children(stmt->data.if_stmt.else_branch);
 		break;
 	default:
 		break;
@@ -160,9 +287,9 @@ static void collect_statement_candidates(AstStmt *stmt, size_t stmt_index, CseEn
 		break;
 	case STMT_WHILE:
 	case STMT_FOR:
-		/* Loop conditions must be evaluated every iteration, so skip them. */
 		break;
 	case STMT_BLOCK:
+	case STMT_IF:
 	default:
 		break;
 	}
@@ -429,7 +556,7 @@ static void apply_cse(AstBlock *block, CseEntryList *entries)
 		AstStmt *decl = ast_stmt_make_decl(entry->type, dup_string(temp_name), init_expr);
 		if (has_live_use)
 		{
-			decl->data.decl.is_used = 1; /* mark as live so DCE keeps this temp */
+			decl->data.decl.is_used = 1;
 		}
 		insert_statement(&block->statements, entry->first_stmt_index + inserted, decl);
 		inserted++;
@@ -562,7 +689,6 @@ static char *expr_make_key(const AstExpr *expr)
 	switch (expr->kind)
 	{
 	case EXPR_INT_LITERAL:
-		// Include type information in the key to distinguish between int and char literals
 		if (expr->type == TYPE_CHAR)
 		{
 			snprintf(buffer, sizeof(buffer), "C:%lld", expr->data.int_value);
@@ -610,7 +736,6 @@ static char *expr_make_key(const AstExpr *expr)
 		return dup_string("<unsupported>");
 	}
 }
-
 static void eliminate_unreachable(AstStmtList *list)
 {
 	if (!list)
