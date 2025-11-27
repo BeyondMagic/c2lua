@@ -168,9 +168,8 @@ static void emit_statement(FILE *out, const AstStmt *stmt, const FunctionTable *
 		{
 			if (!stmt->data.decl.init || !expr_has_side_effects(stmt->data.decl.init))
 			{
-				return; // Dead Code Elimination: remove unused locals without side effects
+				return; // Dead Code Elimination
 			}
-			// Unused variable with initializer that has side effects: emit only the initializer as a statement
 			emit_indent(out, indent);
 			emit_expression_expected(out, stmt->data.decl.init, functions, stmt->data.decl.type);
 			fputc('\n', out);
@@ -244,6 +243,26 @@ static void emit_statement(FILE *out, const AstStmt *stmt, const FunctionTable *
 		emit_indent(out, indent);
 		fputs("end\n", out);
 		break;
+
+	case STMT_IF:
+		emit_indent(out, indent);
+		fputs("if ", out);
+		emit_expression_as_bool(out, stmt->data.if_stmt.condition, functions);
+		fputs(" then\n", out);
+
+		emit_statement(out, stmt->data.if_stmt.then_branch, functions, signature, indent + 1);
+
+		if (stmt->data.if_stmt.else_branch)
+		{
+			emit_indent(out, indent);
+			fputs("else\n", out);
+			emit_statement(out, stmt->data.if_stmt.else_branch, functions, signature, indent + 1);
+		}
+
+		emit_indent(out, indent);
+		fputs("end\n", out);
+		break;
+
 	case STMT_EXPR:
 		if (stmt->data.expr)
 		{
@@ -269,6 +288,8 @@ static void emit_statement(FILE *out, const AstStmt *stmt, const FunctionTable *
 		break;
 	}
 }
+
+/* resto do arquivo fica igual ao seu original */
 
 static void emit_expression_expected(FILE *out, const AstExpr *expr, const FunctionTable *functions, TypeKind expected_type)
 {
