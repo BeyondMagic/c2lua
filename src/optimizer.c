@@ -613,22 +613,26 @@ static char *expr_make_key(const AstExpr *expr)
 
 static void eliminate_unreachable(AstStmtList *list)
 {
-    if (!list) return;
+	if (!list)
+		return;
 
-    int after_return = 0;
-    size_t write = 0;
+	int after_return = 0;
+	size_t write = 0;
 
-    for (size_t i = 0; i < list->count; i++) {
-        AstStmt *s = list->items[i];
-        if (after_return) {
-            continue;
-        }
-        list->items[write++] = s;
-        if (s->kind == STMT_RETURN) {
-            after_return = 1;
-        }
-    }
+	for (size_t i = 0; i < list->count; i++)
+	{
+		AstStmt *s = list->items[i];
+		if (after_return)
+		{
+			ast_stmt_destroy(s);
+			continue;
+		}
+		list->items[write++] = s;
+		if (s->kind == STMT_RETURN)
+		{
+			after_return = 1;
+		}
+	}
 
-    list->count = write;
+	list->count = write;
 }
-

@@ -223,6 +223,7 @@ void ast_expr_list_destroy(AstExprList *list);
 AstStmtList ast_stmt_list_make(void);
 void ast_stmt_list_push(AstStmtList *list, AstStmt *stmt);
 void ast_stmt_list_destroy(AstStmtList *list);
+void ast_stmt_destroy(AstStmt *stmt);
 
 AstBlock ast_block_from_list(AstStmtList *list);
 
