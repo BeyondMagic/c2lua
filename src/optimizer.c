@@ -146,11 +146,7 @@ static void optimize_if_constants(AstBlock *block)
 					stmt->data.if_stmt.else_branch = NULL;
 				}
 
-				ast_expr_list_destroy(NULL);
-				{
-				}
-				free(stmt->data.if_stmt.condition);
-				free(stmt);
+				ast_stmt_destroy(stmt);
 
 				if (replacement)
 				{
