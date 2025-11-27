@@ -145,7 +145,7 @@ typedef struct AstStmt
 		STMT_ARRAY_ASSIGN,
 		STMT_WHILE,
 		STMT_FOR,
-		STMT_IF,     
+		STMT_IF,
 		STMT_EXPR,
 		STMT_RETURN
 	} kind;
