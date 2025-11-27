@@ -18,5 +18,5 @@ int main(int K)
     int a = 10;
     int b = 20;
     int r = sum(a, b) + add(a, b);
-    return 0;
+    return r;
 }

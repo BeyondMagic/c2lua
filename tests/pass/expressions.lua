@@ -13,5 +13,5 @@ os.exit((function(args)
 	local a = 10
 	local b = 20
 	local r = (sum(a, b) + add(a, b))
-	return 0
+	return r
 end)(arg))
