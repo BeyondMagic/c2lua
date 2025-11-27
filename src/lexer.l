@@ -157,6 +157,8 @@ static long long yy_parse_char_literal(const char *src)
 "return"                           { return RETURN; }
 "while"                            { return WHILE; }
 "for"                              { return FOR; }
+"if"                               { return IF; }
+"else"                             { return ELSE; }
 "true"                             { return TRUE; }
 "false"                            { return FALSE; }
 "\["                               { return LBRACKET; }
