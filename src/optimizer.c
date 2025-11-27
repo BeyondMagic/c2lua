@@ -611,7 +611,8 @@ static char *expr_make_key(const AstExpr *expr)
 	}
 }
 
-static void eliminate_unreachable(AstStmtList *list) {
+static void eliminate_unreachable(AstStmtList *list)
+{
     if (!list) return;
 
     int after_return = 0;
